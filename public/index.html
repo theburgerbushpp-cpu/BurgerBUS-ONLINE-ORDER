@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Burger Bus | Online Ordering</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Clover Sandbox Ordering Demo</p>
+        <h1 id="brand-name">The Burger Bus</h1>
+        <p id="business-copy"></p>
+      </div>
+      <div class="hero-card">
+        <p id="address"></p>
+        <p id="phone"></p>
+        <p id="service-rules"></p>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel controls">
+        <h2>Build your order</h2>
+        <div class="grid-two">
+          <label>
+            Fulfillment
+            <select id="fulfillment-type">
+              <option value="pickup">Pickup</option>
+              <option value="delivery">Delivery</option>
+            </select>
+          </label>
+          <label>
+            Payment
+            <select id="payment-method">
+              <option value="cash">Cash</option>
+              <option value="credit_card">Credit card</option>
+            </select>
+          </label>
+          <label>
+            Name
+            <input id="customer-name" type="text" placeholder="Rider name" />
+          </label>
+          <label>
+            Phone
+            <input id="customer-phone" type="tel" placeholder="(808) 238-2528" />
+          </label>
+          <label class="full-width">
+            Address
+            <input id="customer-address" type="text" placeholder="Required for delivery and all credit card orders" />
+          </label>
+          <label>
+            Card last 4
+            <input id="customer-card" type="text" maxlength="4" placeholder="1234" />
+          </label>
+          <label>
+            Rewards member ID
+            <input id="rewards-member" type="text" placeholder="burger-bus-member-1" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading">
+          <h2>Menu</h2>
+          <p>Hover each item tile to reveal Clover variant choices and click a variant to adjust pricing.</p>
+        </div>
+        <div id="menu-grid" class="menu-grid"></div>
+      </section>
+
+      <section class="panel cart-panel">
+        <div class="section-heading">
+          <h2>Cart</h2>
+          <p id="reward-copy"></p>
+        </div>
+        <ul id="cart-items" class="cart-items"></ul>
+        <div class="cart-footer">
+          <strong id="cart-total">Total: $0.00</strong>
+          <button id="submit-order" class="primary-button">Submit order</button>
+        </div>
+        <pre id="order-result" class="order-result"></pre>
+      </section>
+    </main>
+
+    <dialog id="modifier-dialog">
+      <form method="dialog" class="dialog-form">
+        <h3 id="dialog-title"></h3>
+        <p id="dialog-copy"></p>
+        <div id="modifier-options" class="checkbox-group"></div>
+        <div class="dialog-actions">
+          <button value="cancel">Cancel</button>
+          <button id="save-modifiers" value="default" class="primary-button">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="combo-dialog">
+      <form method="dialog" class="dialog-form">
+        <h3>Combo upgrade</h3>
+        <p id="combo-copy"></p>
+        <label class="toggle-row">
+          <input id="combo-toggle" type="checkbox" />
+          Add the specialty fry upgrade to this item.
+        </label>
+        <div class="dialog-actions">
+          <button value="cancel">Skip</button>
+          <button id="save-combo" value="default" class="primary-button">Add to cart</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
