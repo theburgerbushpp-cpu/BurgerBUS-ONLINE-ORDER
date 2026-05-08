@@ -1,7 +1,7 @@
 {
   "name": "burgerbus-online-order",
   "version": "1.0.0",
-  "description": "INTEGRATED ONLINE ODERING PLATFORM FOR THE BUS BUS LLC AND CLOVER",
+  "description": "INTEGRATED ONLINE ORDERING PLATFORM FOR THE BURGER BUS LLC AND CLOVER",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
