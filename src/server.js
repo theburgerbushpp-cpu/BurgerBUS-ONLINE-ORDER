@@ -42,10 +42,15 @@ const server = createServer(async (request, response) => {
     let bodySize = 0;
     let bodyTooLarge = false;
     request.on('data', (chunk) => {
+      if (bodyTooLarge) {
+        return;
+      }
       bodySize += chunk.length;
       if (bodySize > maxRequestBodySize) {
         bodyTooLarge = true;
-        sendJson(response, 413, { error: 'Request body exceeds the 1 MB limit.' });
+        if (!response.writableEnded) {
+          sendJson(response, 413, { error: 'Request body exceeds the 1 MB limit.' });
+        }
         request.destroy();
         return;
       }

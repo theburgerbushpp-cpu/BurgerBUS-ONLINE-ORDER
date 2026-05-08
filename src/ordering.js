@@ -2,6 +2,7 @@ import { business, menu } from './data/menu.js';
 
 const rewardsLedger = new Map();
 const orders = [];
+let nextOrderSequence = 1;
 
 function findMenuItem(itemId) {
   return menu.find((item) => item.id === itemId);
@@ -95,7 +96,7 @@ export function createOrder(payload) {
 
   const subtotal = roundCurrency(normalizedItems.reduce((sum, item) => sum + item.subtotal, 0));
   const rewardsPointsEarned = Math.floor(subtotal * business.rewards.pointsPerDollar);
-  const orderId = `order-${orders.length + 1}`;
+  const orderId = `order-${nextOrderSequence++}`;
   const order = {
     orderId,
     cloverOrderId: `clv-${orderId}`,
