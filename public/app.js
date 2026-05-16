@@ -2,6 +2,7 @@ const state = {
   business: null,
   menu: [],
   inventoryAvailabilityTable: [],
+  apiEnabled: true,
   selectedVariants: new Map(),
   cart: [],
   pendingItem: null,
@@ -40,6 +41,72 @@ const elements = {
 
 const formatCurrency = (value) => `$${value.toFixed(2)}`;
 const lowStockThreshold = 5;
+
+function buildInventoryTableFromMenu(menu) {
+  return menu.flatMap((item) =>
+    item.variants.map((variant) => ({
+      itemId: item.id,
+      itemName: item.name,
+      variantId: variant.id,
+      variantName: variant.name,
+      startingInventory: variant.inventory,
+      usedQuantity: 0,
+      remainingQuantity: variant.inventory,
+      isAvailable: variant.available && variant.inventory > 0,
+    }))
+  );
+}
+
+function validateOrderPayload(payload) {
+  if (!payload.customer.name || !payload.customer.phone) {
+    throw new Error('Customer is missing required fields: name, phone');
+  }
+  if (payload.paymentMethod === 'credit_card') {
+    if (!payload.customer.address) {
+      throw new Error('Credit card orders require customer address');
+    }
+    if (!payload.customer.cardLast4) {
+      throw new Error('Credit card orders require card details');
+    }
+  }
+  if (payload.fulfillmentType === 'delivery' && !payload.customer.address) {
+    throw new Error('Delivery orders require customer address');
+  }
+  if (payload.fulfillmentType === 'delivery' && payload.paymentMethod === 'cash') {
+    throw new Error('Payment method cash is not allowed for delivery orders.');
+  }
+}
+
+function processStaticOrder(payload) {
+  validateOrderPayload(payload);
+
+  const nextTable = state.inventoryAvailabilityTable.map((row) => ({ ...row }));
+  const rowByVariantId = new Map(nextTable.map((row) => [row.variantId, row]));
+
+  payload.items.forEach((item) => {
+    const row = rowByVariantId.get(item.variantId);
+    if (!row || !row.isAvailable || row.remainingQuantity < 1) {
+      throw new Error(`Variant ${item.variantId} is currently unavailable.`);
+    }
+    row.usedQuantity += 1;
+    row.remainingQuantity = Math.max(row.startingInventory - row.usedQuantity, 0);
+    row.isAvailable = row.remainingQuantity > 0;
+  });
+
+  state.inventoryAvailabilityTable = nextTable;
+  renderInventoryTable();
+
+  const subtotal = state.cart.reduce((sum, item) => sum + item.subtotal, 0);
+  return {
+    orderId: `static-${Date.now()}`,
+    cloverOrderId: `clv-static-${Date.now()}`,
+    mode: 'static_pages_fallback',
+    subtotal,
+    paymentStatus: payload.paymentMethod === 'cash' ? 'awaiting_cash_at_pickup' : 'paid',
+    inventoryStatus: 'reserved_locally_for_demo',
+    items: payload.items,
+  };
+}
 
 function syncPaymentOptions() {
   if (elements.fulfillmentType.value === 'delivery') {
@@ -257,30 +324,56 @@ async function submitOrder() {
     })),
   };
 
-  const response = await fetch('/api/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const body = await response.json();
-  elements.orderResult.textContent = JSON.stringify(body, null, 2);
+  try {
+    if (state.apiEnabled) {
+      const response = await fetch('api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json();
+      elements.orderResult.textContent = JSON.stringify(body, null, 2);
 
-  if (response.ok) {
+      if (response.ok) {
+        state.cart = [];
+        updateCart();
+        const bootstrapResponse = await fetch('api/bootstrap');
+        const bootstrapData = await bootstrapResponse.json();
+        state.inventoryAvailabilityTable = bootstrapData.inventoryAvailabilityTable ?? [];
+        renderInventoryTable();
+      }
+      return;
+    }
+
+    const localOrder = processStaticOrder(payload);
+    elements.orderResult.textContent = JSON.stringify(localOrder, null, 2);
     state.cart = [];
     updateCart();
-    const bootstrapResponse = await fetch('/api/bootstrap');
-    const bootstrapData = await bootstrapResponse.json();
-    state.inventoryAvailabilityTable = bootstrapData.inventoryAvailabilityTable ?? [];
-    renderInventoryTable();
+  } catch (error) {
+    elements.orderResult.textContent = JSON.stringify({ error: error.message }, null, 2);
   }
 }
 
 async function bootstrap() {
-  const response = await fetch('/api/bootstrap');
-  const data = await response.json();
+  let data;
+
+  try {
+    const response = await fetch('api/bootstrap');
+    if (!response.ok) {
+      throw new Error('API bootstrap unavailable');
+    }
+    data = await response.json();
+    state.apiEnabled = true;
+  } catch {
+    const fallbackResponse = await fetch('bootstrap.json');
+    data = await fallbackResponse.json();
+    state.apiEnabled = false;
+    elements.orderResult.textContent = 'Static mode: using local Clover demo data (GitHub Pages fallback).';
+  }
+
   state.business = data.business;
   state.menu = data.menu;
-  state.inventoryAvailabilityTable = data.inventoryAvailabilityTable ?? [];
+  state.inventoryAvailabilityTable = data.inventoryAvailabilityTable ?? buildInventoryTableFromMenu(data.menu);
   elements.brandName.textContent = data.business.brand;
   elements.businessCopy.textContent = `${data.business.brand} online ordering mirrors major quick-service flows with Clover sandbox inventory, modifier popups, combo upgrades, cash pickup, credit card checkout, and rewards points.`;
   elements.address.textContent = `${data.business.location.street}, ${data.business.location.city}, ${data.business.location.state} ${data.business.location.postalCode}`;
