@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { business, menu } from './data/menu.js';
-import { createOrder, getOrderingSnapshot } from './ordering.js';
+import { createOrder, getInventoryAvailabilityTable, getOrderingSnapshot } from './ordering.js';
 
 const port = process.env.PORT || 3000;
 const root = join(process.cwd(), 'public');
@@ -34,7 +34,12 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
 
   if (request.method === 'GET' && url.pathname === '/api/bootstrap') {
-    return sendJson(response, 200, { business, menu, snapshot: getOrderingSnapshot() });
+    return sendJson(response, 200, {
+      business,
+      menu,
+      inventoryAvailabilityTable: getInventoryAvailabilityTable(),
+      snapshot: getOrderingSnapshot(),
+    });
   }
 
   if (request.method === 'POST' && url.pathname === '/api/orders') {

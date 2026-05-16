@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createOrder } from '../src/ordering.js';
+import { createOrder, getInventoryAvailabilityTable } from '../src/ordering.js';
 
 const pickupCashOrder = {
   fulfillmentType: 'pickup',
@@ -65,4 +65,33 @@ test('rejects unavailable variants', () => {
       }),
     /Quadruple is currently unavailable/
   );
+});
+
+test('builds Clover inventory availability table with usage information', () => {
+  const variantId = 'clv-item-golden-fries-large';
+  const before = getInventoryAvailabilityTable().find((row) => row.variantId === variantId);
+
+  assert.ok(before, 'Expected a table row for the Clover variant.');
+
+  createOrder({
+    fulfillmentType: 'pickup',
+    paymentMethod: 'cash',
+    customer: {
+      name: 'Inventory Tester',
+      phone: '(808) 555-0101',
+    },
+    items: [
+      {
+        itemId: 'clv-item-golden-fries',
+        variantId,
+      },
+    ],
+  });
+
+  const after = getInventoryAvailabilityTable().find((row) => row.variantId === variantId);
+
+  assert.ok(after, 'Expected a table row for the Clover variant after ordering.');
+  assert.equal(after.usedQuantity, before.usedQuantity + 1);
+  assert.equal(after.remainingQuantity, after.startingInventory - after.usedQuantity);
+  assert.equal(after.isAvailable, after.remainingQuantity > 0);
 });

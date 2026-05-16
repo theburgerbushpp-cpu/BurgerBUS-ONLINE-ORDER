@@ -19,10 +19,46 @@ function roundCurrency(value) {
   return Math.round(value * 100) / 100;
 }
 
+function getVariantUsageMap() {
+  const usage = new Map();
+
+  for (const order of orders) {
+    for (const item of order.items) {
+      usage.set(item.variantId, (usage.get(item.variantId) ?? 0) + 1);
+    }
+  }
+
+  return usage;
+}
+
+export function getInventoryAvailabilityTable() {
+  const variantUsage = getVariantUsageMap();
+
+  return menu.flatMap((item) =>
+    item.variants.map((variant) => {
+      const usedQuantity = variantUsage.get(variant.id) ?? 0;
+      const remainingQuantity = Math.max(variant.inventory - usedQuantity, 0);
+      const isAvailable = variant.available && remainingQuantity > 0;
+
+      return {
+        itemId: item.id,
+        itemName: item.name,
+        variantId: variant.id,
+        variantName: variant.name,
+        startingInventory: variant.inventory,
+        usedQuantity,
+        remainingQuantity,
+        isAvailable,
+      };
+    })
+  );
+}
+
 export function getOrderingSnapshot() {
   return {
     business,
     menu,
+    inventoryAvailabilityTable: getInventoryAvailabilityTable(),
     rewardsMembers: Array.from(rewardsLedger.values()),
     orders,
   };

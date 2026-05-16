@@ -1,6 +1,7 @@
 const state = {
   business: null,
   menu: [],
+  inventoryAvailabilityTable: [],
   selectedVariants: new Map(),
   cart: [],
   pendingItem: null,
@@ -14,6 +15,7 @@ const elements = {
   serviceRules: document.querySelector('#service-rules'),
   rewardCopy: document.querySelector('#reward-copy'),
   menuGrid: document.querySelector('#menu-grid'),
+  inventoryTableBody: document.querySelector('#inventory-table-body'),
   cartItems: document.querySelector('#cart-items'),
   cartTotal: document.querySelector('#cart-total'),
   orderResult: document.querySelector('#order-result'),
@@ -37,6 +39,7 @@ const elements = {
 };
 
 const formatCurrency = (value) => `$${value.toFixed(2)}`;
+const lowStockThreshold = 5;
 
 function syncPaymentOptions() {
   if (elements.fulfillmentType.value === 'delivery') {
@@ -123,6 +126,49 @@ function renderMenu() {
 
   elements.menuGrid.querySelectorAll('[data-customize-id]').forEach((button) => {
     button.addEventListener('click', () => openModifierDialog(button.dataset.customizeId));
+  });
+}
+
+function renderInventoryTable() {
+  elements.inventoryTableBody.innerHTML = '';
+
+  const menuByItemId = new Map(state.menu.map((item) => [item.id, item]));
+
+  state.inventoryAvailabilityTable.forEach((row) => {
+    const item = menuByItemId.get(row.itemId);
+    const tableRow = document.createElement('tr');
+    const statusLabel = !row.isAvailable
+      ? 'Sold out'
+      : row.remainingQuantity <= lowStockThreshold
+        ? 'Low stock'
+        : 'Available';
+    const statusClass = !row.isAvailable
+      ? 'status-pill unavailable'
+      : row.remainingQuantity <= lowStockThreshold
+        ? 'status-pill low-stock'
+        : 'status-pill available';
+
+    tableRow.innerHTML = `
+      <td>
+        <div class="item-cell">
+          <img src="${item?.image ?? ''}" alt="${row.itemName}" loading="lazy" />
+          <div>
+            <strong>${row.itemName}</strong>
+            <p>${row.itemId}</p>
+          </div>
+        </div>
+      </td>
+      <td>
+        <strong>${row.variantName}</strong>
+        <p>${row.variantId}</p>
+      </td>
+      <td>${row.startingInventory}</td>
+      <td>${row.usedQuantity}</td>
+      <td>${row.remainingQuantity}</td>
+      <td><span class="${statusClass}">${statusLabel}</span></td>
+    `;
+
+    elements.inventoryTableBody.append(tableRow);
   });
 }
 
@@ -218,6 +264,15 @@ async function submitOrder() {
   });
   const body = await response.json();
   elements.orderResult.textContent = JSON.stringify(body, null, 2);
+
+  if (response.ok) {
+    state.cart = [];
+    updateCart();
+    const bootstrapResponse = await fetch('/api/bootstrap');
+    const bootstrapData = await bootstrapResponse.json();
+    state.inventoryAvailabilityTable = bootstrapData.inventoryAvailabilityTable ?? [];
+    renderInventoryTable();
+  }
 }
 
 async function bootstrap() {
@@ -225,6 +280,7 @@ async function bootstrap() {
   const data = await response.json();
   state.business = data.business;
   state.menu = data.menu;
+  state.inventoryAvailabilityTable = data.inventoryAvailabilityTable ?? [];
   elements.brandName.textContent = data.business.brand;
   elements.businessCopy.textContent = `${data.business.brand} online ordering mirrors major quick-service flows with Clover sandbox inventory, modifier popups, combo upgrades, cash pickup, credit card checkout, and rewards points.`;
   elements.address.textContent = `${data.business.location.street}, ${data.business.location.city}, ${data.business.location.state} ${data.business.location.postalCode}`;
@@ -233,6 +289,7 @@ async function bootstrap() {
   elements.rewardCopy.textContent = `${data.business.rewards.pointsPerDollar} point per dollar spent. ${data.business.rewards.redemptionNote}`;
   syncPaymentOptions();
   renderMenu();
+  renderInventoryTable();
   updateCart();
 }
 
