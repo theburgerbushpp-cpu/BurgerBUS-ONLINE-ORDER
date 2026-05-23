@@ -20,7 +20,7 @@ export const business = {
   },
 };
 
-export const menu = [
+export let menu = [
   {
     id: 'clv-item-bus-burger',
     name: 'Bus Burger',
@@ -76,3 +76,7 @@ export const menu = [
     modifiers: [],
   },
 ];
+
+export function setMenu(items) {
+  menu = items;
+}
