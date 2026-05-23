@@ -1,4 +1,6 @@
 const CLOVER_SANDBOX_BASE = 'https://sandbox.dev.clover.com';
+const MAX_ITEMS_PER_REQUEST = 200;
+const DEFAULT_INVENTORY_QUANTITY = 10;
 
 async function cloverFetch(path, token) {
   const response = await fetch(`${CLOVER_SANDBOX_BASE}${path}`, {
@@ -21,7 +23,7 @@ async function fetchItemImageUrl(merchantId, itemId, token) {
 
 export async function fetchCloverMenu(merchantId, token) {
   const data = await cloverFetch(
-    `/v3/merchants/${merchantId}/items?expand=modifierGroups,categories,itemStock&limit=200`,
+    `/v3/merchants/${merchantId}/items?expand=modifierGroups,categories,itemStock&limit=${MAX_ITEMS_PER_REQUEST}`,
     token
   );
 
@@ -39,7 +41,7 @@ export async function fetchCloverMenu(merchantId, token) {
             price: (mod.price ?? 0) / 100,
           }))
       );
-      const inventory = Math.max(cloverItem.itemStock?.quantity ?? 10, 0);
+      const inventory = Math.max(cloverItem.itemStock?.quantity ?? DEFAULT_INVENTORY_QUANTITY, 0);
       return {
         id: cloverItem.id,
         name: cloverItem.name,
