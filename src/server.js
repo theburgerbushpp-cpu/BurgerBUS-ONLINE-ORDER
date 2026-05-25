@@ -1,8 +1,9 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
-import { business, menu } from './data/menu.js';
+import { business, menu, setMenu } from './data/menu.js';
 import { createOrder, getInventoryAvailabilityTable, getOrderingSnapshot } from './ordering.js';
+import { fetchCloverMenu } from './clover.js';
 
 const port = process.env.PORT || 3000;
 const root = join(process.cwd(), 'public');
@@ -79,6 +80,24 @@ const server = createServer(async (request, response) => {
   const filePath = url.pathname === '/' ? join(root, 'index.html') : join(root, url.pathname);
   return serveStaticFile(response, filePath);
 });
+
+const { CLOVER_MERCHANT_ID, CLOVER_API_TOKEN } = process.env;
+
+if (CLOVER_MERCHANT_ID && CLOVER_API_TOKEN) {
+  try {
+    const cloverMenu = await fetchCloverMenu(CLOVER_MERCHANT_ID, CLOVER_API_TOKEN);
+    if (cloverMenu.length > 0) {
+      setMenu(cloverMenu);
+      console.log(`Loaded ${cloverMenu.length} item(s) from Clover merchant ${CLOVER_MERCHANT_ID}.`);
+    } else {
+      console.warn('Clover returned no items. Using fallback demo menu.');
+    }
+  } catch (error) {
+    console.error(`Failed to load Clover menu: ${error.message}. Using fallback demo menu.`);
+  }
+} else {
+  console.log('CLOVER_MERCHANT_ID / CLOVER_API_TOKEN not set. Using fallback demo menu.');
+}
 
 server.listen(port, () => {
   console.log(`Burger Bus ordering app is running on http://localhost:${port}`);
