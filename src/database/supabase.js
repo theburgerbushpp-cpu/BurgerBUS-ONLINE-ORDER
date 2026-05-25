@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey, {
@@ -22,6 +22,13 @@ function assertConfigured() {
   }
 }
 
+export class SupabasePersistenceError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'SupabasePersistenceError';
+  }
+}
+
 export async function loadPersistedOrderingSnapshot() {
   assertConfigured();
 
@@ -37,11 +44,11 @@ export async function loadPersistedOrderingSnapshot() {
   ]);
 
   if (ordersResult.error) {
-    throw new Error(`Supabase orders query failed: ${ordersResult.error.message}`);
+    throw new SupabasePersistenceError(`Supabase orders query failed: ${ordersResult.error.message}`);
   }
 
   if (rewardsResult.error) {
-    throw new Error(`Supabase rewards query failed: ${rewardsResult.error.message}`);
+    throw new SupabasePersistenceError(`Supabase rewards query failed: ${rewardsResult.error.message}`);
   }
 
   return {
@@ -65,7 +72,7 @@ export async function persistOrder(order, rewardsMemberId) {
   });
 
   if (orderResult.error) {
-    throw new Error(`Supabase order write failed: ${orderResult.error.message}`);
+    throw new SupabasePersistenceError(`Supabase order write failed: ${orderResult.error.message}`);
   }
 
   if (!rewardsMemberId) {
@@ -78,6 +85,6 @@ export async function persistOrder(order, rewardsMemberId) {
   });
 
   if (rewardsResult.error) {
-    throw new Error(`Supabase rewards write failed: ${rewardsResult.error.message}`);
+    throw new SupabasePersistenceError(`Supabase rewards write failed: ${rewardsResult.error.message}`);
   }
 }

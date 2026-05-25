@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { business, menu } from './data/menu.js';
 import { createOrder, getInventoryAvailabilityTable, getInventoryAvailabilityTableFromOrders, getOrderingSnapshot } from './ordering.js';
-import { isSupabaseEnabled, loadPersistedOrderingSnapshot, persistOrder } from './database/supabase.js';
+import { SupabasePersistenceError, isSupabaseEnabled, loadPersistedOrderingSnapshot, persistOrder } from './database/supabase.js';
 
 const port = process.env.PORT || 3000;
 const root = join(process.cwd(), 'public');
@@ -50,7 +50,8 @@ const server = createServer(async (request, response) => {
           orders: persisted.orders,
         };
       } catch (error) {
-        return sendJson(response, 500, { error: error.message });
+        const statusCode = error instanceof SupabasePersistenceError ? 500 : 400;
+        return sendJson(response, statusCode, { error: error.message });
       }
     }
 
@@ -95,7 +96,7 @@ const server = createServer(async (request, response) => {
 
         sendJson(response, 201, order);
       } catch (error) {
-        const statusCode = error.message.startsWith('Supabase') ? 500 : 400;
+        const statusCode = error instanceof SupabasePersistenceError ? 500 : 400;
         sendJson(response, statusCode, { error: error.message });
       }
     });
