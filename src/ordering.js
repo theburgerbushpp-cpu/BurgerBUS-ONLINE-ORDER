@@ -143,7 +143,7 @@ export function createOrder(payload) {
     subtotal,
     rewardsPointsEarned,
     paymentStatus: paymentMethod === 'cash' ? 'awaiting_cash_at_pickup' : 'paid',
-    inventoryStatus: 'reserved_in_clover_sandbox',
+    inventoryStatus: 'reserved_in_clover_production',
     messaging: [
       `Text queued: We received your order. Estimated completion is ${business.pickupWaitMinutes} minutes.`,
       'Text queued: Clover KDS marked the order ready for completion notification.',

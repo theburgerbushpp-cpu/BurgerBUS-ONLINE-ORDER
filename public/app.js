@@ -375,7 +375,7 @@ async function bootstrap() {
   state.menu = data.menu;
   state.inventoryAvailabilityTable = data.inventoryAvailabilityTable ?? buildInventoryTableFromMenu(data.menu);
   elements.brandName.textContent = data.business.brand;
-  elements.businessCopy.textContent = `${data.business.brand} online ordering mirrors major quick-service flows with Clover sandbox inventory, modifier popups, combo upgrades, cash pickup, credit card checkout, and rewards points.`;
+  elements.businessCopy.textContent = `${data.business.brand} online ordering mirrors major quick-service flows with Clover production inventory, modifier popups, combo upgrades, cash pickup, credit card checkout, and rewards points.`;
   elements.address.textContent = `${data.business.location.street}, ${data.business.location.city}, ${data.business.location.state} ${data.business.location.postalCode}`;
   elements.phone.textContent = data.business.phone;
   elements.serviceRules.textContent = `Pickup accepts cash or credit. Delivery uses ${data.business.deliveryPartners.join(' or ')} and credit card only.`;
