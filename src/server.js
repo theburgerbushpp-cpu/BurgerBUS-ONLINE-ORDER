@@ -81,7 +81,7 @@ const server = createServer(async (request, response) => {
       }
       body += chunk;
     });
-    request.on('end', () => {
+    request.on('end', async () => {
       if (bodyTooLarge) {
         return;
       }
@@ -90,15 +90,13 @@ const server = createServer(async (request, response) => {
         const order = createOrder(payload);
 
         if (isSupabaseEnabled()) {
-          persistOrder(order, payload.rewardsMemberId)
-            .then(() => sendJson(response, 201, order))
-            .catch((error) => sendJson(response, 500, { error: error.message }));
-          return;
+          await persistOrder(order, payload.rewardsMemberId);
         }
 
         sendJson(response, 201, order);
       } catch (error) {
-        sendJson(response, 400, { error: error.message });
+        const statusCode = error.message.startsWith('Supabase') ? 500 : 400;
+        sendJson(response, statusCode, { error: error.message });
       }
     });
     return;

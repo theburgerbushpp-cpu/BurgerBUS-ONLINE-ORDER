@@ -57,16 +57,13 @@ export async function persistOrder(order, rewardsMemberId) {
   assertConfigured();
 
   const now = new Date().toISOString();
-  const orderResult = await supabase.from('orders').upsert(
-    {
-      order_id: order.orderId,
-      clover_order_id: order.cloverOrderId,
-      subtotal: order.subtotal,
-      rewards_points_earned: order.rewardsPointsEarned,
-      order_payload: order,
-    },
-    { onConflict: 'order_id' }
-  );
+  const orderResult = await supabase.from('orders').insert({
+    order_id: order.orderId,
+    clover_order_id: order.cloverOrderId,
+    subtotal: order.subtotal,
+    rewards_points_earned: order.rewardsPointsEarned,
+    order_payload: order,
+  });
 
   if (orderResult.error) {
     throw new Error(`Supabase order write failed: ${orderResult.error.message}`);
