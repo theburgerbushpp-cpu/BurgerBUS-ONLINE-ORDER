@@ -56,7 +56,6 @@ export async function loadPersistedOrderingSnapshot() {
 export async function persistOrder(order, rewardsMemberId) {
   assertConfigured();
 
-  const now = new Date().toISOString();
   const orderResult = await supabase.from('orders').insert({
     order_id: order.orderId,
     clover_order_id: order.cloverOrderId,
@@ -73,24 +72,10 @@ export async function persistOrder(order, rewardsMemberId) {
     return;
   }
 
-  const existingResult = await supabase
-    .from('rewards_ledger')
-    .select('points')
-    .eq('member_id', rewardsMemberId)
-    .maybeSingle();
-
-  if (existingResult.error) {
-    throw new Error(`Supabase rewards lookup failed: ${existingResult.error.message}`);
-  }
-
-  const rewardsResult = await supabase.from('rewards_ledger').upsert(
-    {
-      member_id: rewardsMemberId,
-      points: (existingResult.data?.points ?? 0) + order.rewardsPointsEarned,
-      updated_at: now,
-    },
-    { onConflict: 'member_id' }
-  );
+  const rewardsResult = await supabase.rpc('increment_rewards_points', {
+    target_member_id: rewardsMemberId,
+    points_to_add: order.rewardsPointsEarned,
+  });
 
   if (rewardsResult.error) {
     throw new Error(`Supabase rewards write failed: ${rewardsResult.error.message}`);

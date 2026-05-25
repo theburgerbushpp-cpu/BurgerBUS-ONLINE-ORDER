@@ -14,3 +14,17 @@ create table if not exists public.rewards_ledger (
 );
 
 create index if not exists orders_created_at_idx on public.orders (created_at);
+
+create or replace function public.increment_rewards_points(target_member_id text, points_to_add integer)
+returns void
+language plpgsql
+as $$
+begin
+  insert into public.rewards_ledger (member_id, points, updated_at)
+  values (target_member_id, points_to_add, timezone('utc', now()))
+  on conflict (member_id)
+  do update set
+    points = public.rewards_ledger.points + excluded.points,
+    updated_at = timezone('utc', now());
+end;
+$$;
