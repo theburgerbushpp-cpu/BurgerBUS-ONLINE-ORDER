@@ -19,10 +19,10 @@ function roundCurrency(value) {
   return Math.round(value * 100) / 100;
 }
 
-function getVariantUsageMap() {
+function getVariantUsageMap(orderCollection = orders) {
   const usage = new Map();
 
-  for (const order of orders) {
+  for (const order of orderCollection) {
     for (const item of order.items) {
       usage.set(item.variantId, (usage.get(item.variantId) ?? 0) + 1);
     }
@@ -31,8 +31,8 @@ function getVariantUsageMap() {
   return usage;
 }
 
-export function getInventoryAvailabilityTable() {
-  const variantUsage = getVariantUsageMap();
+export function getInventoryAvailabilityTableFromOrders(orderCollection = orders) {
+  const variantUsage = getVariantUsageMap(orderCollection);
 
   return menu.flatMap((item) =>
     item.variants.map((variant) => {
@@ -52,6 +52,10 @@ export function getInventoryAvailabilityTable() {
       };
     })
   );
+}
+
+export function getInventoryAvailabilityTable() {
+  return getInventoryAvailabilityTableFromOrders();
 }
 
 export function getOrderingSnapshot() {

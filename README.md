@@ -20,6 +20,22 @@ npm start
 
 Then open `http://localhost:3000`.
 
+## Supabase database setup
+
+To persist orders and rewards in a real database, configure Supabase:
+
+1. Create a Supabase project.
+2. Open the SQL Editor and run the SQL in `/supabase/schema.sql`.
+
+3. Copy `.env.example` to `.env` and set:
+
+   ```bash
+   SUPABASE_URL=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   ```
+
+If these variables are not set, the app still runs in local in-memory mode.
+
 ## Test
 
 ```bash

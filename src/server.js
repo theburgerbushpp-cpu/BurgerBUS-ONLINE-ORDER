@@ -2,7 +2,8 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { business, menu } from './data/menu.js';
-import { createOrder, getInventoryAvailabilityTable, getOrderingSnapshot } from './ordering.js';
+import { createOrder, getInventoryAvailabilityTable, getInventoryAvailabilityTableFromOrders, getOrderingSnapshot } from './ordering.js';
+import { isSupabaseEnabled, loadPersistedOrderingSnapshot, persistOrder } from './database/supabase.js';
 
 const port = process.env.PORT || 3000;
 const root = join(process.cwd(), 'public');
@@ -34,11 +35,30 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
 
   if (request.method === 'GET' && url.pathname === '/api/bootstrap') {
+    let inventoryAvailabilityTable = getInventoryAvailabilityTable();
+    let snapshot = getOrderingSnapshot();
+
+    if (isSupabaseEnabled()) {
+      try {
+        const persisted = await loadPersistedOrderingSnapshot();
+        inventoryAvailabilityTable = getInventoryAvailabilityTableFromOrders(persisted.orders);
+        snapshot = {
+          business,
+          menu,
+          inventoryAvailabilityTable,
+          rewardsMembers: persisted.rewardsMembers,
+          orders: persisted.orders,
+        };
+      } catch (error) {
+        return sendJson(response, 500, { error: error.message });
+      }
+    }
+
     return sendJson(response, 200, {
       business,
       menu,
-      inventoryAvailabilityTable: getInventoryAvailabilityTable(),
-      snapshot: getOrderingSnapshot(),
+      inventoryAvailabilityTable,
+      snapshot,
     });
   }
 
@@ -68,6 +88,14 @@ const server = createServer(async (request, response) => {
       try {
         const payload = JSON.parse(body || '{}');
         const order = createOrder(payload);
+
+        if (isSupabaseEnabled()) {
+          persistOrder(order, payload.rewardsMemberId)
+            .then(() => sendJson(response, 201, order))
+            .catch((error) => sendJson(response, 500, { error: error.message }));
+          return;
+        }
+
         sendJson(response, 201, order);
       } catch (error) {
         sendJson(response, 400, { error: error.message });
