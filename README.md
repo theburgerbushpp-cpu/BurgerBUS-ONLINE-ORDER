@@ -3,7 +3,7 @@
 A minimal Burger Bus online ordering MVP that demonstrates the core requirements from the project brief:
 
 - Burger Bus branding, address, and phone number
-- Clover sandbox mode configuration
+- Clover production mode configuration
 - Single menu tiles with variant-driven pricing
 - Modifier and combo upgrade pop-up flows
 - Pickup vs delivery payment rules

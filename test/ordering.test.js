@@ -26,7 +26,7 @@ test('creates a pickup cash order with rewards and combo upgrades', () => {
   assert.equal(order.subtotal, 15.25);
   assert.equal(order.rewardsPointsEarned, 15);
   assert.equal(order.items[0].comboUpgrade.name, 'Upgrade combo with specialty fries');
-  assert.equal(order.cloverMode, 'sandbox');
+  assert.equal(order.cloverMode, 'production');
 });
 
 test('requires address and card details for credit card orders', () => {

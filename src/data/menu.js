@@ -1,6 +1,6 @@
 export const business = {
   brand: 'The Burger Bus',
-  cloverMode: 'sandbox',
+  cloverMode: 'production',
   location: {
     street: '15-1660 32nd Ave.',
     city: 'Keaau',
