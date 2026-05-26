@@ -28,7 +28,7 @@ npm test
 
 ## Deploy on Ubuntu VPS
 
-The repository now includes deployment assets in `/tmp/workspace/theburgerbushpp-cpu/BurgerBUS-ONLINE-ORDER/deploy/vps`.
+The repository now includes deployment assets in `deploy/vps`.
 
 ### 1) Server baseline and hardening
 
@@ -150,7 +150,7 @@ sudo cp deploy/vps/logrotate-burgerbus /etc/logrotate.d/burgerbus
 
 An optional workflow template is provided at:
 
-- `/tmp/workspace/theburgerbushpp-cpu/BurgerBUS-ONLINE-ORDER/deploy/vps/deploy-vps-workflow.yml.example`
+- `deploy/vps/deploy-vps-workflow.yml.example`
 
 Copy it into `.github/workflows/deploy-vps.yml` and configure the required GitHub secrets described in the file.
 
