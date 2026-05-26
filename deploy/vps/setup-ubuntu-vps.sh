@@ -26,6 +26,7 @@ fi
 chown "${DEPLOY_USER}:${DEPLOY_USER}" "${DEPLOY_HOME}"
 chmod 755 "${DEPLOY_HOME}"
 
+# NodeSource's documented install bootstrap for Node.js LTS on Ubuntu.
 curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
 apt install -y nodejs nginx certbot python3-certbot-nginx git ufw
 

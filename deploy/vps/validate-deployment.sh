@@ -33,7 +33,11 @@ check_endpoint() {
 }
 
 echo "Checking service..."
-sudo systemctl is-active --quiet burgerbus
+if ! sudo systemctl is-active --quiet burgerbus; then
+  echo "burgerbus service is not active."
+  sudo systemctl status burgerbus --no-pager || true
+  exit 1
+fi
 echo "burgerbus service is active."
 
 echo "Checking bootstrap endpoint..."
