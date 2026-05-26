@@ -2,25 +2,33 @@
 set -euo pipefail
 
 BASE_URL="${1:-http://127.0.0.1}"
+TMP_RESPONSE_FILE="$(mktemp)"
+trap 'rm -f "${TMP_RESPONSE_FILE}"' EXIT
 
 check_endpoint() {
   local method="$1"
   local url="$2"
-  local payload="${3:-}"
+  local expected_status="$3"
+  local payload=""
+  if [[ $# -ge 4 ]]; then
+    payload="$4"
+  else
+    payload=""
+  fi
 
   local status
   if [[ -n "${payload}" ]]; then
-    status="$(curl -sS -o /tmp/burgerbus-response.out -w "%{http_code}" -X "${method}" "${url}" \
+    status="$(curl -sS -o "${TMP_RESPONSE_FILE}" -w "%{http_code}" -X "${method}" "${url}" \
       -H "Content-Type: application/json" \
       -d "${payload}")"
   else
-    status="$(curl -sS -o /tmp/burgerbus-response.out -w "%{http_code}" -X "${method}" "${url}")"
+    status="$(curl -sS -o "${TMP_RESPONSE_FILE}" -w "%{http_code}" -X "${method}" "${url}")"
   fi
 
-  if [[ "${status}" -lt 200 || "${status}" -ge 300 ]]; then
-    echo "Request failed: ${method} ${url} returned HTTP ${status}"
+  if [[ "${status}" != "${expected_status}" ]]; then
+    echo "Request failed: ${method} ${url} returned HTTP ${status}, expected ${expected_status}"
     echo "--- response body ---"
-    cat /tmp/burgerbus-response.out
+    cat "${TMP_RESPONSE_FILE}"
     echo
     exit 1
   fi
@@ -31,17 +39,17 @@ sudo systemctl is-active --quiet burgerbus
 echo "burgerbus service is active."
 
 echo "Checking bootstrap endpoint..."
-check_endpoint "GET" "${BASE_URL}/api/bootstrap"
+check_endpoint "GET" "${BASE_URL}/api/bootstrap" "200"
 echo "Bootstrap endpoint is healthy."
 
-echo "Checking sample order..."
-check_endpoint "POST" "${BASE_URL}/api/orders" '{
+echo "Checking order validation endpoint behavior..."
+check_endpoint "POST" "${BASE_URL}/api/orders" "400" '{
     "fulfillmentType":"pickup",
-    "paymentMethod":"cash",
+    "paymentMethod":"credit_card",
     "customer":{"name":"Deploy Check","phone":"(808) 555-1111"},
-    "items":[{"itemId":"clv-item-golden-fries","variantId":"clv-item-golden-fries-small"}]
+    "items":[{"itemId":"clv-item-golden-fries","variantId":"clv-item-golden-fries-does-not-exist"}]
   }'
-echo "Order API accepted sample request."
+echo "Order API validation path is reachable."
 
 echo "Recent service logs:"
 sudo journalctl -u burgerbus -n 20 --no-pager

@@ -136,7 +136,7 @@ chmod +x deploy/vps/validate-deployment.sh
 ### 9) Operations baseline
 
 - Log rotation: `deploy/vps/logrotate-burgerbus`
-- Backup helper: `deploy/vps/backup-burgerbus.sh`
+- Backup helper: `deploy/vps/backup-burgerbus.sh` (set `BACKUP_RETENTION_DAYS` to override default 14-day retention)
 - Health checks: `deploy/vps/validate-deployment.sh`
 - Service logs: `journalctl -u burgerbus -f`
 
