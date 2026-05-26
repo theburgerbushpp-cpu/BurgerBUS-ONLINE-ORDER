@@ -6,6 +6,11 @@ BACKUP_DIR="${BACKUP_DIR:-/var/backups/burgerbus}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
+if [[ ! "${BACKUP_RETENTION_DAYS}" =~ ^[0-9]+$ ]] || [[ "${BACKUP_RETENTION_DAYS}" -le 0 ]]; then
+  echo "BACKUP_RETENTION_DAYS must be a positive integer."
+  exit 1
+fi
+
 sudo mkdir -p "${BACKUP_DIR}"
 sudo tar -czf "${BACKUP_DIR}/burgerbus-${STAMP}.tar.gz" \
   --exclude='.git' \
