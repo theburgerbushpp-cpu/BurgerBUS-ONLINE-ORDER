@@ -17,6 +17,15 @@ if ! id -u "${DEPLOY_USER}" >/dev/null 2>&1; then
   adduser --disabled-password --gecos "" "${DEPLOY_USER}"
 fi
 
+DEPLOY_HOME="$(getent passwd "${DEPLOY_USER}" | cut -d: -f6)"
+if [[ -z "${DEPLOY_HOME}" || ! -d "${DEPLOY_HOME}" ]]; then
+  echo "Unable to validate home directory for ${DEPLOY_USER}."
+  exit 1
+fi
+
+chown "${DEPLOY_USER}:${DEPLOY_USER}" "${DEPLOY_HOME}"
+chmod 755 "${DEPLOY_HOME}"
+
 curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
 apt install -y nodejs nginx certbot python3-certbot-nginx git ufw
 
