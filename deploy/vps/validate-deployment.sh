@@ -12,8 +12,6 @@ check_endpoint() {
   local payload=""
   if [[ $# -ge 4 ]]; then
     payload="$4"
-  else
-    payload=""
   fi
 
   local status
