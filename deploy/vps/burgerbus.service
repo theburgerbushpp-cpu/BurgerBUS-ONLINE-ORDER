@@ -1,0 +1,18 @@
+[Unit]
+Description=BurgerBUS Online Order App
+After=network.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/var/www/BurgerBUS-ONLINE-ORDER
+EnvironmentFile=/etc/burgerbus/burgerbus.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/burgerbus/app.log
+StandardError=append:/var/log/burgerbus/error.log
+
+[Install]
+WantedBy=multi-user.target
