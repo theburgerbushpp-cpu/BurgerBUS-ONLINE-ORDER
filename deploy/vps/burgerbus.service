@@ -11,6 +11,7 @@ EnvironmentFile=/etc/burgerbus/burgerbus.env
 ExecStart=/usr/bin/node src/server.js
 Restart=always
 RestartSec=5
+LogsDirectory=burgerbus
 StandardOutput=append:/var/log/burgerbus/app.log
 StandardError=append:/var/log/burgerbus/error.log
 

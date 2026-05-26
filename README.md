@@ -37,7 +37,6 @@ On a fresh Ubuntu LTS VPS:
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo adduser deploy
-sudo usermod -aG sudo deploy
 sudo mkdir -p /home/deploy/.ssh
 sudo cp ~/.ssh/authorized_keys /home/deploy/.ssh/authorized_keys
 sudo chown -R deploy:deploy /home/deploy/.ssh
@@ -77,6 +76,7 @@ cd /var/www
 git clone https://github.com/theburgerbushpp-cpu/BurgerBUS-ONLINE-ORDER.git
 cd /var/www/BurgerBUS-ONLINE-ORDER
 npm install --omit=dev
+# one-time smoke test; press Ctrl+C after confirming startup
 npm start
 ```
 

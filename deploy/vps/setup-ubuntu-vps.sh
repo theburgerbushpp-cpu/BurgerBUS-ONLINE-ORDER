@@ -17,8 +17,6 @@ if ! id -u "${DEPLOY_USER}" >/dev/null 2>&1; then
   adduser --disabled-password --gecos "" "${DEPLOY_USER}"
 fi
 
-usermod -aG sudo "${DEPLOY_USER}"
-
 curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
 apt install -y nodejs nginx certbot python3-certbot-nginx git ufw
 
