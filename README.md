@@ -9,10 +9,17 @@ A minimal Burger Bus online ordering MVP that demonstrates the core requirements
 - Pickup vs delivery payment rules
 - Cash pickup vs credit card validation
 - Clover-style IDs for menu and order records
+- Cart reservations that immediately hold inventory while the cart is active
+- Checkout flow that converts reserved inventory into a paid Clover-backed order
 - Rewards point accrual for app orders
 - Simulated Clover KDS and Twilio status messaging
 
 ## Run locally
+
+Set Clover Merchant ID and Auth token:
+
+1. Copy `.env.example` to `.env`.
+2. Update `CLOVER_MERCHANT_ID` and `CLOVER_API_TOKEN` in `.env`.
 
 ```bash
 npm start
@@ -26,9 +33,9 @@ Then open `http://localhost:3000`.
 npm test
 ```
 
-## Backend schema
+## Supabase backend schema
 
-The backend relational schema is available at `src/data/backend-schema.sql`.
+The backend relational schema is intended to be managed in Supabase and is available at `src/data/backend-schema.sql`.
 
 It includes normalized tables and constraints for:
 
@@ -38,6 +45,6 @@ It includes normalized tables and constraints for:
 - Credit card processing (tokenized payment methods and transaction ledger)
 - Loyalty (accounts, points balance, earn/redeem ledger)
 
-Target dialect: PostgreSQL 14+
+Target platform: Supabase Postgres (PostgreSQL 14+ compatible)
 
-The schema also creates a `clover` schema and adds foreign-key references from app tables to Clover-facing tables (`clover.items`, `clover.item_variants`, `clover.orders`, `clover.payment_transactions`, etc.) so data can stay linked to Clover IDs and synced records.
+Use this SQL as the basis for Supabase migrations or direct schema setup. The schema also creates a `clover` schema and adds foreign-key references from app tables to Clover-facing tables (`clover.items`, `clover.item_variants`, `clover.orders`, `clover.payment_transactions`, etc.) so data can stay linked to Clover IDs and synced records.

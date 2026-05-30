@@ -2,14 +2,23 @@ const CLOVER_SANDBOX_BASE = 'https://sandbox.dev.clover.com';
 const MAX_ITEMS_PER_REQUEST = 200;
 const DEFAULT_INVENTORY_QUANTITY = 10;
 
-async function cloverFetch(path, token) {
+async function cloverRequest(path, token, { method = 'GET', body } = {}) {
   const response = await fetch(`${CLOVER_SANDBOX_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
   });
   if (!response.ok) {
     throw new Error(`Clover API responded with ${response.status} for ${path}`);
   }
   return response.json();
+}
+
+async function cloverFetch(path, token) {
+  return cloverRequest(path, token);
 }
 
 async function fetchItemImageUrl(merchantId, itemId, token) {
@@ -62,4 +71,37 @@ export async function fetchCloverMenu(merchantId, token) {
       };
     })
   );
+}
+
+export async function processCloverCartPayment({ merchantId, token, cart, customer, fulfillmentType, amount }) {
+  try {
+    const order = await cloverRequest(`/v3/merchants/${merchantId}/orders`, token, {
+      method: 'POST',
+      body: {
+        state: 'open',
+        title: `${fulfillmentType} online order`,
+        note: `Burger Bus cart ${cart.cartId} for ${customer.name}`,
+      },
+    });
+
+    const payment = await cloverRequest(`/v3/merchants/${merchantId}/payments`, token, {
+      method: 'POST',
+      body: {
+        amount: Math.round(amount * 100),
+        currency: 'USD',
+        note: `Online checkout for ${customer.name}`,
+        order: {
+          id: order.id,
+        },
+      },
+    });
+
+    return {
+      cloverOrderId: order.id,
+      cloverPaymentId: payment.id,
+      status: payment.result ?? 'succeeded',
+    };
+  } catch (error) {
+    throw new Error(`Clover checkout failed: ${error.message}`);
+  }
 }

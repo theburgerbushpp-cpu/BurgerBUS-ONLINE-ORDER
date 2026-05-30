@@ -1,6 +1,6 @@
 -- BurgerBUS backend relational schema
 -- Covers: inventory, ordering, availability, credit card processing, loyalty
--- Target dialect: PostgreSQL 14+
+-- Target platform: Supabase Postgres (PostgreSQL 14+ compatible)
 
 BEGIN;
 

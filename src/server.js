@@ -1,9 +1,10 @@
+import 'dotenv/config';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { business, menu, setMenu } from './data/menu.js';
-import { createOrder, getInventoryAvailabilityTable, getOrderingSnapshot } from './ordering.js';
-import { fetchCloverMenu } from './clover.js';
+import { addCartItem, checkoutCart, createCart, createOrder, getInventoryAvailabilityTable, getOrderingSnapshot } from './ordering.js';
+import { fetchCloverMenu, processCloverCartPayment } from './clover.js';
 
 const port = process.env.PORT || 3000;
 const root = join(process.cwd(), 'public');
@@ -19,6 +20,60 @@ const contentTypes = {
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
   response.end(JSON.stringify(payload));
+}
+
+function buildCheckoutProcessor() {
+  if (!CLOVER_MERCHANT_ID || !CLOVER_API_TOKEN) {
+    return undefined;
+  }
+
+  return (context) =>
+    processCloverCartPayment({
+      merchantId: CLOVER_MERCHANT_ID,
+      token: CLOVER_API_TOKEN,
+      ...context,
+    });
+}
+
+function readJsonBody(request, response) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    let bodySize = 0;
+    let bodyTooLarge = false;
+
+    request.on('data', (chunk) => {
+      if (bodyTooLarge) {
+        return;
+      }
+
+      bodySize += chunk.length;
+      if (bodySize > maxRequestBodySize) {
+        bodyTooLarge = true;
+        if (!response.writableEnded) {
+          sendJson(response, 413, { error: 'Request body exceeds the 1 MB limit.' });
+        }
+        request.destroy();
+        reject(new Error('REQUEST_TOO_LARGE'));
+        return;
+      }
+
+      body += chunk;
+    });
+
+    request.on('end', () => {
+      if (bodyTooLarge) {
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(body || '{}'));
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    request.on('error', reject);
+  });
 }
 
 async function serveStaticFile(response, filePath) {
@@ -43,38 +98,69 @@ const server = createServer(async (request, response) => {
     });
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/carts') {
+    try {
+      const payload = await readJsonBody(request, response);
+      const cart = createCart(payload);
+      return sendJson(response, 201, {
+        cart,
+        inventoryAvailabilityTable: getInventoryAvailabilityTable(),
+      });
+    } catch (error) {
+      if (error.message === 'REQUEST_TOO_LARGE') {
+        return;
+      }
+      return sendJson(response, 400, { error: error.message });
+    }
+  }
+
+  const cartItemMatch = request.method === 'POST' ? url.pathname.match(/^\/api\/carts\/([^/]+)\/items$/) : null;
+  if (cartItemMatch) {
+    try {
+      const payload = await readJsonBody(request, response);
+      const cart = addCartItem(cartItemMatch[1], payload.item ?? payload);
+      return sendJson(response, 200, {
+        cart,
+        inventoryAvailabilityTable: getInventoryAvailabilityTable(),
+      });
+    } catch (error) {
+      if (error.message === 'REQUEST_TOO_LARGE') {
+        return;
+      }
+      return sendJson(response, 400, { error: error.message });
+    }
+  }
+
+  const cartCheckoutMatch = request.method === 'POST' ? url.pathname.match(/^\/api\/carts\/([^/]+)\/checkout$/) : null;
+  if (cartCheckoutMatch) {
+    try {
+      const payload = await readJsonBody(request, response);
+      const order = await checkoutCart(cartCheckoutMatch[1], payload, {
+        processPayment: buildCheckoutProcessor(),
+      });
+      return sendJson(response, 201, {
+        order,
+        inventoryAvailabilityTable: getInventoryAvailabilityTable(),
+      });
+    } catch (error) {
+      if (error.message === 'REQUEST_TOO_LARGE') {
+        return;
+      }
+      return sendJson(response, 400, { error: error.message });
+    }
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/orders') {
-    let body = '';
-    let bodySize = 0;
-    let bodyTooLarge = false;
-    request.on('data', (chunk) => {
-      if (bodyTooLarge) {
+    try {
+      const payload = await readJsonBody(request, response);
+      const order = createOrder(payload);
+      return sendJson(response, 201, order);
+    } catch (error) {
+      if (error.message === 'REQUEST_TOO_LARGE') {
         return;
       }
-      bodySize += chunk.length;
-      if (bodySize > maxRequestBodySize) {
-        bodyTooLarge = true;
-        if (!response.writableEnded) {
-          sendJson(response, 413, { error: 'Request body exceeds the 1 MB limit.' });
-        }
-        request.destroy();
-        return;
-      }
-      body += chunk;
-    });
-    request.on('end', () => {
-      if (bodyTooLarge) {
-        return;
-      }
-      try {
-        const payload = JSON.parse(body || '{}');
-        const order = createOrder(payload);
-        sendJson(response, 201, order);
-      } catch (error) {
-        sendJson(response, 400, { error: error.message });
-      }
-    });
-    return;
+      return sendJson(response, 400, { error: error.message });
+    }
   }
 
   const filePath = url.pathname === '/' ? join(root, 'index.html') : join(root, url.pathname);

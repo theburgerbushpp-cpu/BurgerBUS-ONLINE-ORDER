@@ -3,6 +3,7 @@ const state = {
   menu: [],
   inventoryAvailabilityTable: [],
   apiEnabled: true,
+  serverCartId: null,
   selectedVariants: new Map(),
   cart: [],
   pendingItem: null,
@@ -41,6 +42,23 @@ const elements = {
 
 const formatCurrency = (value) => `$${value.toFixed(2)}`;
 const lowStockThreshold = 5;
+
+function getInventoryRow(variantId) {
+  return state.inventoryAvailabilityTable.find((row) => row.variantId === variantId) ?? null;
+}
+
+function isVariantAvailable(variant) {
+  const inventoryRow = getInventoryRow(variant.id);
+  return inventoryRow ? inventoryRow.isAvailable : variant.available && variant.inventory > 0;
+}
+
+function syncCartFromServer(cart) {
+  state.serverCartId = cart.cartId;
+  state.cart = cart.items.map((item) => ({
+    ...item,
+    modifierIds: item.modifiers.map((modifier) => modifier.id),
+  }));
+}
 
 function buildInventoryTableFromMenu(menu) {
   return menu.flatMap((item) =>
@@ -146,6 +164,7 @@ function renderMenu() {
   elements.menuGrid.innerHTML = '';
   state.menu.forEach((item) => {
     const selectedVariant = getSelectedVariant(item);
+    const selectedVariantAvailable = isVariantAvailable(selectedVariant);
     const card = document.createElement('article');
     card.className = 'menu-card';
 
@@ -156,7 +175,7 @@ function renderMenu() {
             class="variant-chip ${variant.id === selectedVariant.id ? 'active' : ''}"
             data-item-id="${item.id}"
             data-variant-id="${variant.id}"
-            ${!variant.available ? 'disabled' : ''}
+            ${!isVariantAvailable(variant) ? 'disabled' : ''}
           >
             ${variant.name}
           </button>
@@ -169,14 +188,14 @@ function renderMenu() {
       <div class="menu-card-content">
         <div class="badge-row">
           <span class="status-badge">${item.category}</span>
-          <span class="status-badge">${selectedVariant.available ? 'Available' : 'Sold out'}</span>
+          <span class="status-badge">${selectedVariantAvailable ? 'Available' : 'Sold out'}</span>
         </div>
         <h3>${item.name}</h3>
         <p>${item.description}</p>
         <div class="variant-row">${variantsMarkup}</div>
         <div class="price-row">
           <strong>${formatCurrency(selectedVariant.price)}</strong>
-          <button class="primary-button" data-customize-id="${item.id}" ${!selectedVariant.available ? 'disabled' : ''}>Customize</button>
+          <button class="primary-button" data-customize-id="${item.id}" ${!selectedVariantAvailable ? 'disabled' : ''}>Customize</button>
         </div>
       </div>
     `;
@@ -271,7 +290,7 @@ function openModifierDialog(itemId) {
 function openComboDialog() {
   const item = state.menu.find((candidate) => candidate.id === state.pendingItem.itemId);
   if (!item.comboUpgrade) {
-    addPendingItemToCart();
+    void addPendingItemToCart();
     return;
   }
 
@@ -280,7 +299,7 @@ function openComboDialog() {
   elements.comboDialog.showModal();
 }
 
-function addPendingItemToCart() {
+async function addPendingItemToCart() {
   const item = state.menu.find((candidate) => candidate.id === state.pendingItem.itemId);
   const variant = item.variants.find((candidate) => candidate.id === state.pendingItem.variantId);
   const modifiers = state.pendingItem.modifiers
@@ -288,8 +307,7 @@ function addPendingItemToCart() {
     .filter(Boolean);
   const comboUpgrade = state.pendingItem.comboUpgrade ? item.comboUpgrade : null;
   const subtotal = variant.price + modifiers.reduce((sum, modifier) => sum + modifier.price, 0) + (comboUpgrade?.price ?? 0);
-
-  state.cart.push({
+  const cartItem = {
     itemId: item.id,
     itemName: item.name,
     variantId: variant.id,
@@ -298,7 +316,63 @@ function addPendingItemToCart() {
     modifierIds: modifiers.map((modifier) => modifier.id),
     comboUpgrade,
     subtotal,
-  });
+  };
+
+  if (state.apiEnabled) {
+    try {
+      const response = await fetch(state.serverCartId ? `api/carts/${state.serverCartId}/items` : 'api/carts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          state.serverCartId
+            ? {
+                item: {
+                  itemId: cartItem.itemId,
+                  variantId: cartItem.variantId,
+                  modifierIds: cartItem.modifierIds,
+                  comboUpgrade: Boolean(cartItem.comboUpgrade),
+                },
+              }
+            : {
+                items: [
+                  {
+                    itemId: cartItem.itemId,
+                    variantId: cartItem.variantId,
+                    modifierIds: cartItem.modifierIds,
+                    comboUpgrade: Boolean(cartItem.comboUpgrade),
+                  },
+                ],
+              }
+        ),
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body.error ?? 'Unable to reserve item in cart.');
+      }
+
+      syncCartFromServer(body.cart);
+      state.inventoryAvailabilityTable = body.inventoryAvailabilityTable ?? state.inventoryAvailabilityTable;
+      updateCart();
+      renderInventoryTable();
+      renderMenu();
+      elements.orderResult.textContent = JSON.stringify(
+        {
+          cartId: body.cart.cartId,
+          inventoryStatus: body.cart.inventoryStatus,
+          expiresAt: body.cart.expiresAt,
+        },
+        null,
+        2
+      );
+    } catch (error) {
+      elements.orderResult.textContent = JSON.stringify({ error: error.message }, null, 2);
+    } finally {
+      state.pendingItem = null;
+    }
+    return;
+  }
+
+  state.cart.push(cartItem);
 
   updateCart();
   state.pendingItem = null;
@@ -326,21 +400,30 @@ async function submitOrder() {
 
   try {
     if (state.apiEnabled) {
-      const response = await fetch('api/orders', {
+      if (!state.serverCartId) {
+        throw new Error('Add at least one available item to the cart before checkout.');
+      }
+
+      const response = await fetch(`api/carts/${state.serverCartId}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          fulfillmentType: payload.fulfillmentType,
+          paymentMethod: payload.paymentMethod,
+          customer: payload.customer,
+          rewardsMemberId: payload.rewardsMemberId,
+        }),
       });
       const body = await response.json();
-      elements.orderResult.textContent = JSON.stringify(body, null, 2);
+      elements.orderResult.textContent = JSON.stringify(body.order ?? body, null, 2);
 
       if (response.ok) {
+        state.serverCartId = null;
         state.cart = [];
         updateCart();
-        const bootstrapResponse = await fetch('api/bootstrap');
-        const bootstrapData = await bootstrapResponse.json();
-        state.inventoryAvailabilityTable = bootstrapData.inventoryAvailabilityTable ?? [];
+        state.inventoryAvailabilityTable = body.inventoryAvailabilityTable ?? [];
         renderInventoryTable();
+        renderMenu();
       }
       return;
     }
@@ -397,7 +480,7 @@ elements.saveCombo.addEventListener('click', (event) => {
   event.preventDefault();
   state.pendingItem.comboUpgrade = elements.comboToggle.checked;
   elements.comboDialog.close();
-  addPendingItemToCart();
+  void addPendingItemToCart();
 });
 elements.submitOrder.addEventListener('click', submitOrder);
 
