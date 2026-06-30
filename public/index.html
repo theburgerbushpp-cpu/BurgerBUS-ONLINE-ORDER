@@ -7,103 +7,125 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="hero">
-      <div>
-        <p class="eyebrow">Clover Sandbox Ordering Demo</p>
-        <h1 id="brand-name">The Burger Bus</h1>
-        <p id="business-copy"></p>
-      </div>
-      <div class="hero-card">
-        <p id="address"></p>
-        <p id="phone"></p>
-        <p id="service-rules"></p>
-      </div>
-    </header>
+    <div class="page-wrapper">
+      <main class="site-shell">
+        <section class="hero-panel">
+          <div class="hero-overlay">
+            <nav class="top-nav">
+              <strong id="brand-name">Burgerfest</strong>
+              <ul>
+                <li>Home</li>
+                <li>Services</li>
+                <li>About</li>
+                <li>Foods</li>
+                <li>Pages</li>
+              </ul>
+              <div class="nav-actions">
+                <button type="button">Sign In</button>
+                <button type="button" class="primary-button">Buy now</button>
+              </div>
+            </nav>
+            <div class="hero-content">
+              <div>
+                <p class="eyebrow">5 min • 10 miles in 1$</p>
+                <h1>Gourmet Fully Burger, <span>Here</span></h1>
+                <p id="business-copy"></p>
+                <button type="button" class="primary-button hero-button">Learn Now</button>
+              </div>
+              <div class="hero-details">
+                <p id="address"></p>
+                <p id="phone"></p>
+                <p id="service-rules"></p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-    <main>
-      <section class="panel controls">
-        <h2>Build your order</h2>
-        <div class="grid-two">
-          <label>
-            Fulfillment
-            <select id="fulfillment-type">
-              <option value="pickup">Pickup</option>
-              <option value="delivery">Delivery</option>
-            </select>
-          </label>
-          <label>
-            Payment
-            <select id="payment-method">
-              <option value="cash">Cash</option>
-              <option value="credit_card">Credit card</option>
-            </select>
-          </label>
-          <label>
-            Name
-            <input id="customer-name" type="text" placeholder="Rider name" />
-          </label>
-          <label>
-            Phone
-            <input id="customer-phone" type="tel" placeholder="(808) 238-2528" />
-          </label>
-          <label class="full-width">
-            Address
-            <input id="customer-address" type="text" placeholder="Required for delivery and all credit card orders" />
-          </label>
-          <label>
-            Card last 4
-            <input id="customer-card" type="text" maxlength="4" placeholder="1234" />
-          </label>
-          <label>
-            Rewards member ID
-            <input id="rewards-member" type="text" placeholder="burger-bus-member-1" />
-          </label>
-        </div>
-      </section>
+        <section class="menu-panel">
+          <div class="section-heading">
+            <h2>Fresh your burger taste</h2>
+            <p>Pick a burger card, choose a variant, customize, and add it to your cart.</p>
+          </div>
+          <div id="menu-grid" class="menu-grid"></div>
+        </section>
 
-      <section class="panel">
-        <div class="section-heading">
-          <h2>Menu</h2>
-          <p>Hover each item tile to reveal Clover variant choices and click a variant to adjust pricing.</p>
-        </div>
-        <div id="menu-grid" class="menu-grid"></div>
-      </section>
+        <section class="panel controls">
+          <div class="section-heading">
+            <h2>Complete your order</h2>
+            <p id="reward-copy"></p>
+          </div>
+          <div class="grid-two">
+            <label>
+              Fulfillment
+              <select id="fulfillment-type">
+                <option value="pickup">Pickup</option>
+                <option value="delivery">Delivery</option>
+              </select>
+            </label>
+            <label>
+              Payment
+              <select id="payment-method">
+                <option value="cash">Cash</option>
+                <option value="credit_card">Credit card</option>
+              </select>
+            </label>
+            <label>
+              Name
+              <input id="customer-name" type="text" placeholder="Rider name" />
+            </label>
+            <label>
+              Phone
+              <input id="customer-phone" type="tel" placeholder="(808) 238-2528" />
+            </label>
+            <label class="full-width">
+              Address
+              <input id="customer-address" type="text" placeholder="Required for delivery and all credit card orders" />
+            </label>
+            <label>
+              Card last 4
+              <input id="customer-card" type="text" maxlength="4" placeholder="1234" />
+            </label>
+            <label>
+              Rewards member ID
+              <input id="rewards-member" type="text" placeholder="burger-bus-member-1" />
+            </label>
+          </div>
+        </section>
 
-      <section class="panel">
-        <div class="section-heading">
-          <h2>Inventory availability</h2>
-          <p>Clover item pictures with variant-level inventory usage and remaining availability.</p>
-        </div>
-        <div class="inventory-table-wrap">
-          <table class="inventory-table" aria-label="Inventory availability table">
-            <thead>
-              <tr>
-                <th scope="col">Item</th>
-                <th scope="col">Variant</th>
-                <th scope="col">Starting</th>
-                <th scope="col">Used</th>
-                <th scope="col">Remaining</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody id="inventory-table-body"></tbody>
-          </table>
-        </div>
-      </section>
+        <section class="panel cart-panel">
+          <div class="section-heading">
+            <h2>Cart</h2>
+          </div>
+          <ul id="cart-items" class="cart-items"></ul>
+          <div class="cart-footer">
+            <strong id="cart-total">Total: $0.00</strong>
+            <button id="submit-order" class="primary-button">Submit order</button>
+          </div>
+          <pre id="order-result" class="order-result"></pre>
+        </section>
 
-      <section class="panel cart-panel">
-        <div class="section-heading">
-          <h2>Cart</h2>
-          <p id="reward-copy"></p>
-        </div>
-        <ul id="cart-items" class="cart-items"></ul>
-        <div class="cart-footer">
-          <strong id="cart-total">Total: $0.00</strong>
-          <button id="submit-order" class="primary-button">Submit order</button>
-        </div>
-        <pre id="order-result" class="order-result"></pre>
-      </section>
-    </main>
+        <section class="panel inventory-panel">
+          <div class="section-heading">
+            <h2>Inventory availability</h2>
+          </div>
+          <div class="inventory-table-wrap">
+            <table class="inventory-table" aria-label="Inventory availability table">
+              <thead>
+                <tr>
+                  <th scope="col">Item</th>
+                  <th scope="col">Variant</th>
+                  <th scope="col">Starting</th>
+                  <th scope="col">Used</th>
+                  <th scope="col">Remaining</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
 
     <dialog id="modifier-dialog">
       <form method="dialog" class="dialog-form">
