@@ -20,6 +20,7 @@ Set Clover Merchant ID and Auth token:
 
 1. Copy `.env.example` to `.env`.
 2. Update `CLOVER_MERCHANT_ID` and `CLOVER_API_TOKEN` in `.env`.
+3. Set `CLOVER_MODE=production` for live Clover, or `CLOVER_MODE=sandbox` for test mode.
 
 ```bash
 npm start
