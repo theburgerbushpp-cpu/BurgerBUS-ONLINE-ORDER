@@ -9,7 +9,9 @@ services:
     environment:
       - CLOVER_MERCHANT_ID=${CLOVER_MERCHANT_ID}
       - CLOVER_API_TOKEN=${CLOVER_API_TOKEN}
+      - CLOVER_ACCESS_TOKEN=${CLOVER_ACCESS_TOKEN}
       - CLOVER_MODE=${CLOVER_MODE:-production}
+      - CLOVER_API_BASE_URL=${CLOVER_API_BASE_URL}
       - PORT=3000
       - NODE_ENV=production
     restart: always

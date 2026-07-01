@@ -23,14 +23,14 @@ function sendJson(response, statusCode, payload) {
 }
 
 function buildCheckoutProcessor() {
-  if (!CLOVER_MERCHANT_ID || !CLOVER_API_TOKEN) {
+  if (!CLOVER_MERCHANT_ID || !CLOVER_TOKEN) {
     return undefined;
   }
 
   return (context) =>
     processCloverCartPayment({
       merchantId: CLOVER_MERCHANT_ID,
-      token: CLOVER_API_TOKEN,
+      token: CLOVER_TOKEN,
       ...context,
     });
 }
@@ -167,11 +167,12 @@ const server = createServer(async (request, response) => {
   return serveStaticFile(response, filePath);
 });
 
-const { CLOVER_MERCHANT_ID, CLOVER_API_TOKEN } = process.env;
+const { CLOVER_MERCHANT_ID, CLOVER_API_TOKEN, CLOVER_ACCESS_TOKEN } = process.env;
+const CLOVER_TOKEN = CLOVER_API_TOKEN || CLOVER_ACCESS_TOKEN;
 
-if (CLOVER_MERCHANT_ID && CLOVER_API_TOKEN) {
+if (CLOVER_MERCHANT_ID && CLOVER_TOKEN) {
   try {
-    const cloverMenu = await fetchCloverMenu(CLOVER_MERCHANT_ID, CLOVER_API_TOKEN);
+    const cloverMenu = await fetchCloverMenu(CLOVER_MERCHANT_ID, CLOVER_TOKEN);
     if (cloverMenu.length > 0) {
       setMenu(cloverMenu);
       console.log(`Loaded ${cloverMenu.length} item(s) from Clover merchant ${CLOVER_MERCHANT_ID}.`);
@@ -182,7 +183,7 @@ if (CLOVER_MERCHANT_ID && CLOVER_API_TOKEN) {
     console.error(`Failed to load Clover menu: ${error.message}. Using fallback demo menu.`);
   }
 } else {
-  console.log('CLOVER_MERCHANT_ID / CLOVER_API_TOKEN not set. Using fallback demo menu.');
+  console.log('CLOVER_MERCHANT_ID and Clover token not set (CLOVER_API_TOKEN or CLOVER_ACCESS_TOKEN). Using fallback demo menu.');
 }
 
 server.listen(port, () => {

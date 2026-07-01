@@ -1,5 +1,7 @@
 const CLOVER_MODE = (process.env.CLOVER_MODE || 'production').toLowerCase();
-const CLOVER_BASE_URL = CLOVER_MODE === 'sandbox' ? 'https://sandbox.dev.clover.com' : 'https://api.clover.com';
+const CLOVER_BASE_URL =
+  process.env.CLOVER_API_BASE_URL ||
+  (CLOVER_MODE === 'sandbox' ? 'https://sandbox.dev.clover.com' : 'https://api.clover.com');
 const MAX_ITEMS_PER_REQUEST = 200;
 const DEFAULT_INVENTORY_QUANTITY = 10;
 
